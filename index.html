@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Simulator - Interactive Learning</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            margin: 10px 0;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .chunk-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .chunk {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            flex: 1;
+            min-width: 150px;
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .embedding-visual {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            max-height: 150px;
+            overflow-y: auto;
+            word-break: break-all;
+        }
+
+        .vector-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .similarity-score {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .score {
+            font-weight: bold;
+            color: #2e7d32;
+            font-size: 1.2em;
+        }
+
+        .retrieved-content {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+
+        .final-prompt {
+            background: #f3e5f5;
+            border-left: 4px solid #764ba2;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .llm-response {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+            line-height: 1.6;
+        }
+
+        .process-flow {
+            grid-column: 1 / -1;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .flow-diagram {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            overflow-x: auto;
+            padding: 20px 0;
+        }
+
+        .flow-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .flow-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 120px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .flow-arrow {
+            font-size: 2em;
+            color: #667eea;
+            margin: 0 20px;
+            flex-shrink: 0;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            color: #1565c0;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .flow-diagram {
+                flex-direction: column;
+            }
+
+            .flow-arrow {
+                transform: rotate(90deg);
+                margin: 10px 0;
+            }
+        }
+
+        .step-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        .empty-state {
+            color: #999;
+            font-style: italic;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .highlight {
+            background: #fff59d;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 RAG Simulator</h1>
+            <p class="subtitle">Interactive visualization of Retrieval Augmented Generation pipeline</p>
+        </header>
+
+        <!-- Process Flow Diagram -->
+        <div class="process-flow">
+            <h2 style="margin-bottom: 20px; color: #667eea;">RAG Pipeline Flow</h2>
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="flow-box">📄 Documents</div>
+                    <div class="step-label">Input Data</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-box">✂️ Chunking</div>
+                    <div class="step-label">Split Text</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-box">🧮 Embeddings</div>
+                    <div class="step-label">Vectorize</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-box">🗄️ Vector DB</div>
+                    <div class="step-label">Store</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-box">🔍 Retrieval</div>
+                    <div class="step-label">Search</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-box">🎯 LLM</div>
+                    <div class="step-label">Generate</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Step 1: Input Documents -->
+            <div class="card">
+                <h2><span class="step-number">1</span> Input Documents</h2>
+                <p style="color: #666; margin-bottom: 10px;">Paste or enter your documents/text:</p>
+                <textarea id="inputText" placeholder="Enter your document here. Example: 'Artificial Intelligence is transforming industries. Machine learning is a subset of AI. Deep learning uses neural networks.'" rows="6">Artificial Intelligence is transforming industries. Machine learning is a subset of AI. Deep learning uses neural networks. Natural language processing helps computers understand text. Computer vision enables machines to interpret images.</textarea>
+                <button onclick="processDocuments()">📄 Process Documents</button>
+            </div>
+
+            <!-- Step 2: Chunking -->
+            <div class="card">
+                <h2><span class="step-number">2</span> Chunking</h2>
+                <p style="color: #666; margin-bottom: 10px;">Documents split into chunks:</p>
+                <div id="chunksOutput" class="chunk-container">
+                    <div class="empty-state">Chunks will appear here after processing</div>
+                </div>
+                <div class="info-box">
+                    ℹ️ Chunking breaks large documents into smaller, semantically meaningful pieces. This makes retrieval more precise and helps fit content within LLM context windows.
+                </div>
+            </div>
+
+            <!-- Step 3: Embeddings -->
+            <div class="card">
+                <h2><span class="step-number">3</span> Vector Embeddings</h2>
+                <p style="color: #666; margin-bottom: 10px;">Text converted to numerical vectors:</p>
+                <div id="embeddingsOutput" class="embedding-visual">
+                    <div class="empty-state">Embeddings will appear here</div>
+                </div>
+                <div class="info-box">
+                    ℹ️ Embeddings convert text into high-dimensional vectors that capture semantic meaning. Similar texts have similar vectors, enabling similarity-based retrieval.
+                </div>
+            </div>
+
+            <!-- Step 4: Vector Database -->
+            <div class="card">
+                <h2><span class="step-number">4</span> Vector Database Storage</h2>
+                <p style="color: #666; margin-bottom: 10px;">Chunks stored with their embeddings:</p>
+                <div id="vectorDBOutput" style="max-height: 300px; overflow-y: auto;">
+                    <div class="empty-state">Vector database will populate here</div>
+                </div>
+                <div class="info-box">
+                    ℹ️ The vector database stores chunks alongside their embeddings for fast similarity search during retrieval.
+                </div>
+            </div>
+
+            <!-- Step 5: User Query -->
+            <div class="card">
+                <h2><span class="step-number">5</span> User Query</h2>
+                <p style="color: #666; margin-bottom: 10px;">Enter your question:</p>
+                <input type="text" id="queryInput" placeholder="Example: What is machine learning?" value="What is machine learning?">
+                <button onclick="performRetrieval()">🔍 Retrieve Relevant Chunks</button>
+                <div id="queryEmbedding" style="margin-top: 15px;">
+                </div>
+            </div>
+
+            <!-- Step 6: Retrieval & Matching -->
+            <div class="card">
+                <h2><span class="step-number">6</span> Retrieval & Similarity Matching</h2>
+                <p style="color: #666; margin-bottom: 10px;">Most relevant chunks ranked by similarity:</p>
+                <div id="retrievalOutput">
+                    <div class="empty-state">Retrieved chunks will appear here</div>
+                </div>
+                <div class="info-box">
+                    ℹ️ The system converts your query to an embedding and finds the chunks with the highest similarity scores.
+                </div>
+            </div>
+
+            <!-- Step 7: Augmentation & Prompt -->
+            <div class="card">
+                <h2><span class="step-number">7</span> Prompt Augmentation</h2>
+                <p style="color: #666; margin-bottom: 10px;">Final prompt sent to LLM:</p>
+                <div id="promptOutput" class="final-prompt">
+                    <div class="empty-state">Augmented prompt will appear here</div>
+                </div>
+                <div class="info-box">
+                    ℹ️ Retrieved chunks are combined with your query to create a context-enriched prompt for the LLM.
+                </div>
+            </div>
+
+            <!-- Step 8: LLM Response -->
+            <div class="card">
+                <h2><span class="step-number">8</span> LLM Generated Answer</h2>
+                <p style="color: #666; margin-bottom: 10px;">Response based on augmented context:</p>
+                <div id="responseOutput">
+                    <div class="empty-state">LLM response will appear here</div>
+                </div>
+                <div class="info-box">
+                    ℹ️ The LLM uses the retrieved context to provide a more accurate and grounded answer to your query.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple embedding function (simulated - uses character-based hashing)
+        function generateEmbedding(text) {
+            const normalized = text.toLowerCase().trim();
+            const embedding = [];
+            
+            // Generate 10-dimensional vector based on text characteristics
+            for (let i = 0; i < 10; i++) {
+                let sum = 0;
+                for (let j = 0; j < normalized.length; j++) {
+                    sum += normalized.charCodeAt(j) * Math.sin(j * i + 1);
+                }
+                embedding.push(Number((sum / normalized.length).toFixed(3)));
+            }
+            return embedding;
+        }
+
+        // Calculate cosine similarity between two vectors
+        function cosineSimilarity(vec1, vec2) {
+            let dotProduct = 0;
+            let magnitude1 = 0;
+            let magnitude2 = 0;
+            
+            for (let i = 0; i < vec1.length; i++) {
+                dotProduct += vec1[i] * vec2[i];
+                magnitude1 += vec1[i] * vec1[i];
+                magnitude2 += vec2[i] * vec2[i];
+            }
+            
+            magnitude1 = Math.sqrt(magnitude1);
+            magnitude2 = Math.sqrt(magnitude2);
+            
+            if (magnitude1 === 0 || magnitude2 === 0) return 0;
+            return dotProduct / (magnitude1 * magnitude2);
+        }
+
+        // Split text into sentences (simple chunking)
+        function chunkText(text) {
+            const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+            return sentences.map(s => s.trim()).filter(s => s.length > 0);
+        }
+
+        let vectorDatabase = [];
+
+        function processDocuments() {
+            const inputText = document.getElementById('inputText').value;
+            
+            if (!inputText.trim()) {
+                alert('Please enter some text');
+                return;
+            }
+
+            // Step 2: Chunk the text
+            const chunks = chunkText(inputText);
+            displayChunks(chunks);
+
+            // Step 3 & 4: Generate embeddings and create vector database
+            vectorDatabase = chunks.map((chunk, index) => ({
+                id: index,
+                text: chunk,
+                embedding: generateEmbedding(chunk)
+            }));
+
+            displayEmbeddings(vectorDatabase);
+            displayVectorDB(vectorDatabase);
+        }
+
+        function displayChunks(chunks) {
+            const container = document.getElementById('chunksOutput');
+            container.innerHTML = chunks.map((chunk, index) => 
+                `<div class="chunk"><strong>Chunk ${index + 1}:</strong> ${chunk}</div>`
+            ).join('');
+        }
+
+        function displayEmbeddings(vectorDB) {
+            const container = document.getElementById('embeddingsOutput');
+            container.innerHTML = vectorDB.map((item, index) => 
+                `<div style="margin-bottom: 15px;">
+                    <strong>Chunk ${index + 1} Vector:</strong><br>
+                    [${item.embedding.map(v => v.toFixed(2)).join(', ')}]
+                </div>`
+            ).join('');
+        }
+
+        function displayVectorDB(vectorDB) {
+            const container = document.getElementById('vectorDBOutput');
+            container.innerHTML = vectorDB.map((item, index) => 
+                `<div style="background: #f5f5f5; padding: 12px; margin: 8px 0; border-radius: 6px; border-left: 3px solid #667eea;">
+                    <strong>ID: ${item.id}</strong><br>
+                    <strong>Text:</strong> "${item.text}"<br>
+                    <strong>Vector:</strong> [${item.embedding.map(v => v.toFixed(2)).join(', ')}]
+                </div>`
+            ).join('');
+        }
+
+        function performRetrieval() {
+            if (vectorDatabase.length === 0) {
+                alert('Please process documents first');
+                return;
+            }
+
+            const query = document.getElementById('queryInput').value;
+            
+            if (!query.trim()) {
+                alert('Please enter a query');
+                return;
+            }
+
+            // Step 5: Generate query embedding
+            const queryEmbedding = generateEmbedding(query);
+            displayQueryEmbedding(query, queryEmbedding);
+
+            // Step 6: Calculate similarity and retrieve
+            const results = vectorDatabase.map(item => ({
+                ...item,
+                similarity: cosineSimilarity(queryEmbedding, item.embedding)
+            })).sort((a, b) => b.similarity - a.similarity);
+
+            displayRetrieval(results);
+
+            // Step 7: Create augmented prompt
+            const topResults = results.slice(0, 3); // Get top 3
+            const augmentedPrompt = createAugmentedPrompt(query, topResults);
+            displayAugmentedPrompt(augmentedPrompt);
+
+            // Step 8: Generate LLM response (simulated)
+            const response = generateLLMResponse(query, topResults);
+            displayLLMResponse(response);
+        }
+
+        function displayQueryEmbedding(query, embedding) {
+            const container = document.getElementById('queryEmbedding');
+            container.innerHTML = `
+                <div style="background: #e3f2fd; padding: 12px; border-radius: 6px;">
+                    <strong>Query:</strong> "${query}"<br>
+                    <strong>Embedding:</strong> [${embedding.map(v => v.toFixed(2)).join(', ')}]
+                </div>
+            `;
+        }
+
+        function displayRetrieval(results) {
+            const container = document.getElementById('retrievalOutput');
+            container.innerHTML = results.map((item, index) => 
+                `<div class="similarity-score">
+                    <div style="flex: 1;">
+                        <strong>Rank ${index + 1}:</strong> "${item.text}"
+                    </div>
+                    <div class="score">${(item.similarity * 100).toFixed(1)}%</div>
+                </div>`
+            ).join('');
+        }
+
+        function createAugmentedPrompt(query, topResults) {
+            const context = topResults.map(r => r.text).join(' ');
+            return `Context from knowledge base:\n${context}\n\nUser Query: ${query}\n\nBased on the context above, provide an answer to the user's query.`;
+        }
+
+        function displayAugmentedPrompt(prompt) {
+            const container = document.getElementById('promptOutput');
+            container.innerHTML = `<pre>${prompt}</pre>`;
+        }
+
+        function generateLLMResponse(query, topResults) {
+            // Simulated LLM response based on retrieved content
+            const context = topResults.map(r => r.text.toLowerCase()).join(' ');
+            
+            let response = "Based on the retrieved context: ";
+            
+            if (context.includes('machine learning')) {
+                response += "Machine learning is a subset of artificial intelligence that focuses on enabling systems to learn from data and improve their performance without being explicitly programmed. ";
+            }
+            if (context.includes('deep learning')) {
+                response += "Deep learning, a branch of machine learning, uses artificial neural networks with multiple layers to process complex patterns in data. ";
+            }
+            if (context.includes('natural language processing')) {
+                response += "Natural language processing is the technology that allows computers to understand and process human language in meaningful ways. ";
+            }
+            if (context.includes('computer vision')) {
+                response += "Computer vision enables machines to interpret and analyze visual information from images and videos. ";
+            }
+            if (context.includes('artificial intelligence')) {
+                response += "Artificial intelligence is the broader field encompassing all these technologies, aiming to create systems that can perform tasks requiring human-level intelligence. ";
+            }
+            
+            if (response === "Based on the retrieved context: ") {
+                response += "I found relevant information in the knowledge base that relates to your query. The retrieved content provides context for understanding the topic you asked about.";
+            }
+            
+            return response;
+        }
+
+        function displayLLMResponse(response) {
+            const container = document.getElementById('responseOutput');
+            container.innerHTML = `<div class="llm-response">${response}</div>`;
+        }
+
+        // Initialize with sample data on load
+        window.addEventListener('load', function() {
+            processDocuments();
+        });
+    </script>
+</body>
+</html>
